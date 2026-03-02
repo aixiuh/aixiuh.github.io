@@ -16,10 +16,10 @@ timezone: Asia/Shanghai
 
 title: Astroinn Blog # the main title
 
-tagline: A text-focused Jekyll theme # it will display as the sub-title
+tagline: 记录技术、分享思考 # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
-  A minimal, responsive and feature-rich Jekyll theme for technical writing.
+  aixiuh 的个人技术博客，记录编程、网络、运维等技术文章。
 
 # Fill in the protocol & hostname for your site.
 # e.g. 'https://username.github.io', note that it does not end with a '/'.

@@ -1,8 +1,8 @@
 ---
 title: "WireGuard VPN 外网无法访问 FNOS Docker 服务"
 date: 2026-02-28 17:00:00 +0800
-categories: []
-tags: []
+categories: [技术]
+tags: [WireGuard, VPN, Docker, iptables, 网络]
 ---
 
 
