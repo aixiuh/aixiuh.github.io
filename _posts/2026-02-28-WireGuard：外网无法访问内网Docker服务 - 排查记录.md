@@ -1,12 +1,19 @@
 ---
-title: "WireGuard VPN 外网无法访问 FNOS Docker 服务"
+title: "WireGuard 外网无法访问 FNOS Docker 服务"
 date: 2026-02-28 17:00:00 +0800
-categories: []
-tags: []
+categories: [Networking]
+tags: [wireguard, vpn, docker, fnos, iptables]
 ---
 
 
-# WireGuard VPN 外网无法访问 FNOS Docker 服务 - 排查记录
+# WireGuard 外网无法访问 FNOS Docker 服务 - 排查记录
+
+## TL;DR
+
+- **现象**：WireGuard 远端只能打开 FNOS 自身服务，映射到 Docker 的端口全部超时。
+- **根因**：FNOS 的 `FORWARD` 链默认 DROP，且 iStoreOS 没有对 VPN 网段做 SNAT，导致请求进容器但回包无路可走。
+- **修复**：在 FNOS `DOCKER-USER` 链放行 `192.168.6.0/24`，在 iStoreOS 对 `10.0.0.0/24` 做 `MASQUERADE`，并持久化规则。
+- **快速入口**：[直接查看最终修复命令](#最终修复命令)
 
 ## 环境信息
 
@@ -36,20 +43,14 @@ tags: []
 在 iStoreOS 上执行：
 
 ```bash
-wg show
+wg show | sed -n '1,8p'
 ```
-
-输出结果：
 
 ```
 interface: WireGuard
-  listening port: 52525
-
-peer:
-  allowed ips: 10.0.0.10/32
-
-peer:
-  allowed ips: 10.0.0.3/32
+    listening port: 52525
+peer: ...
+    allowed ips: 10.0.0.10/32
 ```
 
 确认 VPN 网段为 `10.0.0.0/24`。
@@ -139,29 +140,23 @@ iptables -t nat -I POSTROUTING -s 10.0.0.0/24 -o br-lan -j MASQUERADE
 
 ### 修复前的流量路径
 
-```
-外网设备 (10.0.0.10)
-    ↓ WireGuard 隧道
-iStoreOS
-    ↓ 路由到 FNOS (192.168.6.111)
-    ↓ 没有对 Docker 端口做 SNAT
-FNOS Docker 容器
-    ↓ 回包目标是 10.0.0.10
-    ↓ 不知道怎么路由回去 ❌ 超时
+```mermaid
+flowchart TD
+    Client[外网设备 10.0.0.10] -->|WireGuard| WG[iStoreOS]
+    WG -->|无 SNAT| FNOS[FNOS 宿主机]
+    FNOS -->|FORWARD→Docker| Container[Docker 容器]
+    Container -->|回包 10.0.0.10| Drop[路由失败 / 超时]
 ```
 
 ### 修复后的流量路径
 
-```
-外网设备 (10.0.0.10)
-    ↓ WireGuard 隧道
-iStoreOS
-    ↓ MASQUERADE：把源IP 10.0.0.10 改为 192.168.6.1
-FNOS Docker 容器
-    ↓ 回包目标是 192.168.6.1（iStoreOS）
-iStoreOS
-    ↓ 知道这是 10.0.0.10 的回包，转发回去
-外网设备 ✅ 成功访问
+```mermaid
+flowchart TD
+    Client[外网设备 10.0.0.10] -->|WireGuard| WG[iStoreOS]
+    WG -->|SNAT→192.168.6.1| FNOS[FNOS 宿主机]
+    FNOS --> Container[Docker 容器]
+    Container -->|回包 192.168.6.1| WG
+    WG -->|还原→10.0.0.10| Client
 ```
 
 ---
@@ -179,6 +174,8 @@ sudo apt install iptables-persistent -y
 sudo netfilter-persistent save
 ```
 
+> 💾 FNOS 每次规则变更后都要 `netfilter-persistent save`，否则重启即失效。
+
 ### iStoreOS 上
 
 ```bash
@@ -190,6 +187,8 @@ cat >> /etc/firewall.user << 'EOF'
 iptables -t nat -I POSTROUTING -s 10.0.0.0/24 -o br-lan -j MASQUERADE
 EOF
 ```
+
+> 💾 OpenWrt/iStoreOS 可通过 `uci` 写 firewall 规则，但在 `firewall.user` 里追加同样生效。
 
 ---
 

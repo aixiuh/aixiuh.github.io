@@ -19,7 +19,7 @@ title: Astroinn Blog # the main title
 tagline: 记录技术、分享思考
 
 description: >- # used by seo meta and the atom feed
-  aixiuh 的个人技术博客，记录编程、网络、运维等技术文章。
+  Astroinn 的个人技术博客，记录编程、网络、运维等技术文章。
 
 # Fill in the protocol & hostname for your site.
 # e.g. 'https://username.github.io', note that it does not end with a '/'.
@@ -34,7 +34,7 @@ github:
 social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
-  name: aixiuh
+  name: Astroinn
   email: me@innzz.com # change to your email address
   links:
     # The first element serves as the copyright owner's link
@@ -93,10 +93,10 @@ theme_mode: # [light | dark]
 # will be added to all media resources (site avatar, posts' images, audio and video files) paths starting with '/'
 #
 # e.g. 'https://cdn.com'
-cdn:
+cdn: https://img.202252.xyz
 
 # the avatar on sidebar, support local or CORS resources
-avatar: assets/img/favicons/favicon.ico
+avatar: /commons/favicons/favicon.ico
 
 # The URL of the site-wide social preview image used in SEO `og:image` meta tag.
 # It can be overridden by a customized `page.image` in front matter.
